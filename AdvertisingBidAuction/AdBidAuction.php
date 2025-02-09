@@ -1,12 +1,12 @@
 <?php
 
 if ($argc < 2 || $argc > 3) {
-    echo "Usage: php auction.php <file.csv> [asc|desc]\n";
+    echo "Usage: php AdBidAuction.php <*.csv> [asc|desc]\n";
     exit(1);
 }
 
 $filename = $argv[1];
-$sort_order = $argv[2] ?? 'desc'; // Default to 'desc' if not provided
+$sort_order = $argv[2] ?? 'asc'; // Default to ascending order
 
 if (!file_exists($filename) || !is_readable($filename)) {
     echo "Error: File does not exist or is not readable.\n";
@@ -51,7 +51,7 @@ if (count($bids) < 2) {
     exit(1);
 }
 
-// Sort by bid descending, then by ad ID ascending for consistency
+// Sort bids descending, then sort ad IDs ascending for consistency
 uksort($bids, function ($a, $b) use ($bids) {
     if ($bids[$a] === $bids[$b]) {
         return $a <=> $b; // Sort by ad_id ascending if bids are equal
@@ -59,12 +59,22 @@ uksort($bids, function ($a, $b) use ($bids) {
     return $bids[$b] <=> $bids[$a]; // Sort by bid descending
 });
 
-// Get all ads with the highest bid
-$max_bid = max($bids);
-$top_ads = array_keys($bids, $max_bid);
+// Get unique bid values sorted in descending order
+$unique_bids = array_unique(array_values($bids));
+rsort($unique_bids); // Ensure sorting is descending
 
-// Select the first or last based on sorting preference
-$best_ad_id = ($sort_order === 'asc') ? end($top_ads) : reset($top_ads);
-$second_best_bid = array_values($bids)[1];
+$best_bid = $unique_bids[0] ?? null; // Highest bid
+$second_best_bid = $unique_bids[1] ?? null; // Second highest bid
+
+if ($second_best_bid === null) {
+    echo "Error: No second-best bid found.\n";
+    exit(1);
+}
+
+// Get all ads with the highest bid
+$top_ads = array_keys($bids, $best_bid);
+
+// Select first or last based on sorting preference
+$best_ad_id = ($sort_order === 'asc') ? reset($top_ads) : end($top_ads);
 
 echo "$best_ad_id, $second_best_bid\n";
