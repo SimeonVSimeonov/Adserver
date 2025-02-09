@@ -1,80 +1,78 @@
 <?php
 
-if ($argc < 2 || $argc > 3) {
-    echo "Usage: php AdBidAuction.php <*.csv> [asc|desc]\n";
-    exit(1);
+function validateInput($argc, $argv) {
+    if ($argc < 2 || $argc > 3) {
+        echo "Usage: php AdBidAuction.php <file.csv> [asc|desc]\n";
+        exit(1);
+    }
+    return [$argv[1], $argv[2] ?? 'asc'];
 }
 
-$filename = $argv[1];
-$sort_order = $argv[2] ?? 'asc'; // Default to ascending order
-
-if (!file_exists($filename) || !is_readable($filename)) {
-    echo "Error: File does not exist or is not readable.\n";
-    exit(1);
-}
-
-$handle = fopen($filename, "r");
-if (!$handle) {
-    echo "Error: Unable to open file.\n";
-    exit(1);
-}
-
-$bids = [];
-
-while (($data = fgetcsv($handle)) !== false) {
-    if (count($data) < 2) {
-        continue; // Skip invalid rows
+function readCSVFile($filename) {
+    if (!file_exists($filename) || !is_readable($filename)) {
+        echo "Error: File does not exist or is not readable.\n";
+        exit(1);
     }
 
-    $ad_id = trim($data[0]);
-    $bid = trim($data[1]);
-
-    // Validate ad_id (must be numeric and not empty)
-    if (!ctype_digit($ad_id)) {
-        continue;
+    $handle = fopen($filename, "r");
+    if (!$handle) {
+        echo "Error: Unable to open file.\n";
+        exit(1);
     }
-    $ad_id = intval($ad_id);
 
-    // Validate bid (must be a numeric value)
-    if (!is_numeric($bid)) {
-        continue;
+    $bids = [];
+    while (($data = fgetcsv($handle)) !== false) {
+        if (count($data) < 2) {
+            continue;
+        }
+
+        $ad_id = trim($data[0]);
+        $bid = trim($data[1]);
+
+        if (!ctype_digit($ad_id) || !is_numeric($bid)) {
+            continue;
+        }
+
+        $bids[intval($ad_id)] = floatval($bid);
     }
-    $bid = floatval($bid);
+    fclose($handle);
 
-    $bids[$ad_id] = $bid;
+    return $bids;
 }
 
-fclose($handle);
-
-if (count($bids) < 2) {
-    echo "Error: Not enough valid bids.\n";
-    exit(1);
-}
-
-// Sort bids descending, then sort ad IDs ascending for consistency
-uksort($bids, function ($a, $b) use ($bids) {
-    if ($bids[$a] === $bids[$b]) {
-        return $a <=> $b; // Sort by ad_id ascending if bids are equal
+function processBids($bids, $sort_order) {
+    if (count($bids) < 2) {
+        echo "Error: Not enough valid bids.\n";
+        exit(1);
     }
-    return $bids[$b] <=> $bids[$a]; // Sort by bid descending
-});
 
-// Get unique bid values sorted in descending order
-$unique_bids = array_unique(array_values($bids));
-rsort($unique_bids); // Ensure sorting is descending
+    uksort($bids, function ($a, $b) use ($bids) {
+        if ($bids[$a] === $bids[$b]) {
+            return $a <=> $b;
+        }
+        return $bids[$b] <=> $bids[$a];
+    });
 
-$best_bid = $unique_bids[0] ?? null; // Highest bid
-$second_best_bid = $unique_bids[1] ?? null; // Second highest bid
+    $unique_bids = array_unique(array_values($bids));
+    rsort($unique_bids);
 
-if ($second_best_bid === null) {
-    echo "Error: No second-best bid found.\n";
-    exit(1);
+    $best_bid = $unique_bids[0] ?? null;
+    $second_best_bid = $unique_bids[1] ?? null;
+
+    if ($second_best_bid === null) {
+        echo "Error: No second-best bid found.\n";
+        exit(1);
+    }
+
+    $top_ads = array_keys($bids, $best_bid);
+    $best_ad_id = ($sort_order === 'asc') ? reset($top_ads) : end($top_ads);
+
+    return [$best_ad_id, $second_best_bid];
 }
 
-// Get all ads with the highest bid
-$top_ads = array_keys($bids, $best_bid);
-
-// Select first or last based on sorting preference
-$best_ad_id = ($sort_order === 'asc') ? reset($top_ads) : end($top_ads);
+// Main Execution
+list($filename, $sort_order) = validateInput($argc, $argv);
+$bids = readCSVFile($filename);
+list($best_ad_id, $second_best_bid) = processBids($bids, $sort_order);
 
 echo "$best_ad_id, $second_best_bid\n";
