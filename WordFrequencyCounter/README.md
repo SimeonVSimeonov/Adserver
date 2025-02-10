@@ -1,20 +1,52 @@
+
 # Word Frequency Counter Service
 
-This is a simple PHP script that handles multiple POST requests with text and counts how often each word appears. It can also handle GET requests to display the word counts and search for specific words.
+This PHP service processes POST requests containing text and counts the frequency of each word. It also supports GET requests to display all word counts or search for specific words.
 
-## Requirements
+## Prerequisites
 
-- PHP 7.x or later
+- Docker installed on your machine
 
-## How to Execute the Program
+## Setup & Running the Service
 
-1. **Create a folder** for your project (e.g., `word-frequency-counter`).
+1. **Build the Docker container**:
+    ```bash
+    docker-compose build
+    ```
 
-## How to Test the Program
+2. **Run the service**:
+    ```bash
+    docker-compose up
+    ```
 
-### 1. Send a POST request to count words
+3. **Shut down the service**:
+    ```bash
+    docker-compose down
+    ```
 
-You can send a POST request to the server to process the text and count the word frequency. For example, using cURL:
+## Testing the Service
 
+You can test the service using cURL or Postman with the following endpoints.
+
+### 1. Send a POST request with text to count word frequency
+
+Example using cURL:
 ```bash
-curl -X POST -d "text=Love grows where kindness lives." http://localhost/index.php
+curl -X POST -d "text=Love grows where kindness lives." "http://localhost:8080/index.php"
+curl -X POST -d "text=Kindness lives in every heart." "http://localhost:8080/index.php"
+```
+
+### 2. View all word counts with a GET request
+
+To get the frequency of all words processed so far, use:
+```bash
+curl "http://localhost:8080/index.php"
+```
+
+### 3. Search for a specific word frequency with a GET request
+
+To search for the frequency of a specific word, e.g., "kindness":
+```bash
+curl "http://localhost:8080/index.php?word=kindness"
+```
+

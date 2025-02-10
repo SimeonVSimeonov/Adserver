@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Save the updated word frequencies back to the file
     file_put_contents(FREQUENCY_FILE, json_encode($wordFrequency));
 
-    echo 'Text processed successfully.';
+    echo "Text processed successfully.\n";
 }
 
 // GET Request Handler for displaying all words and their counts
