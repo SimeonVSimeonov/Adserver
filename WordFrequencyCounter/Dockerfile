@@ -1,8 +1,10 @@
 # Use an official PHP image with PHP-FPM
 FROM php:7.4-fpm
 
-# Install any required PHP extensions (you can add more as needed)
-RUN docker-php-ext-install pdo pdo_mysql
+# Install necessary PHP extensions, including Redis
+RUN apt-get update && apt-get install -y libssl-dev && \
+    pecl install redis && \
+    docker-php-ext-enable redis
 
 # Set the working directory inside the container
 WORKDIR /var/www

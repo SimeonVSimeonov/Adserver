@@ -2,30 +2,55 @@
 
 class WordFrequencyModel
 {
-    const FREQUENCY_FILE = '/var/www/word_frequencies.json';
+    private static $redis;
+
+    const REDIS_HOST = 'redis';
+    const REDIS_PORT = 6379;
 
     /**
-     * Load word frequencies from the file
+     * Load word frequencies from Redis
      *
-     * @return array|mixed
+     * @return array
      */
-    public static function load()
+    public static function load(): array
     {
-        if (file_exists(self::FREQUENCY_FILE)) {
-            $data = file_get_contents(self::FREQUENCY_FILE);
-            return json_decode($data, true) ?: []; // Return empty array if data is invalid
+        self::initRedis();
+
+        $keys = self::$redis->keys('word_freq:*');
+        $wordFrequency = [];
+
+        foreach ($keys as $key) {
+            $word = str_replace('word_freq:', '', $key);
+            $count = self::$redis->get($key);
+            $wordFrequency[$word] = (int)$count;
         }
-        return [];
+
+        return $wordFrequency;
     }
 
     /**
-     * Save word frequencies to the file
+     * Save word frequencies to Redis
      *
      * @param array $wordFrequency
      * @return void
      */
     public static function save(array $wordFrequency): void
     {
-        file_put_contents(self::FREQUENCY_FILE, json_encode($wordFrequency, JSON_PRETTY_PRINT));
+        self::initRedis();
+
+        foreach ($wordFrequency as $word => $count) {
+            self::$redis->set('word_freq:' . $word, $count);
+        }
+    }
+
+    /**
+     * Initialize Redis connection
+     */
+    private static function initRedis()
+    {
+        if (!self::$redis) {
+            self::$redis = new Redis();
+            self::$redis->connect(self::REDIS_HOST, self::REDIS_PORT);
+        }
     }
 }
